@@ -1,0 +1,13 @@
+month   degree  lmda
+jan     2       1e1
+feb     1       1e0
+march   1       1e-1
+april   2       1e-1
+may     3       1e-3
+june    1       1e-1
+july    1       1e-1
+august  1       1e-3
+sept    1       1e0   
+oct     2       1e4
+nov     2       1e2
+dec     1       1e3

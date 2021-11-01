@@ -1,0 +1,6 @@
+{
+    "git.ignoreLimitWarning": true,
+    "python.languageServer": "Pylance",
+    "workbench.colorTheme": "Github Light Theme - Gray"
+  
+}
