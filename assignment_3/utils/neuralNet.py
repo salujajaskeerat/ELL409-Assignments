@@ -1,17 +1,7 @@
 from typing import List
 import numpy as np
 from typing import List, Literal
-
-
-def sigmoid(z):
-    """
-    z is assumed to be vector and then the sigmoid is applied element wise
-    """
-    return 1.0/(1.0+np.exp(-z))
-
-
-def sigmoid_derivative(z):
-    return sigmoid(z)*(1.0-sigmoid(z))
+from sigmoid import sigmoid, sigmoid_derivative
 
 
 def perceptron(z):
@@ -48,7 +38,9 @@ class NeuralNet(object):
 
         self.neuron_type = neuron_type
         self.activation_func = {"sigmoid": sigmoid,
-                                "perceptron": perceptron}[neuron_type]
+                                }[neuron_type]
+        self.activation_fun_derivative = {"sigmoid": sigmoid_derivative,
+                                          }[neuron_type]
 
     def describe(self):
 
@@ -107,26 +99,26 @@ class NeuralNet(object):
         db = [np.zeros(b.shape) for b in self.biases]
         dw = [np.zeros(w.shape) for w in self.weights]
         # feedforward
-        activation = x
+        a = x
         activations = [x]
         zs = []
 
         # Forwards propagations
         for b, w in zip(self.biases, self.weights):
-            z = np.dot(w, activation)+b
+            z = np.dot(w, a)+b
             zs.append(z)
-            activation = sigmoid(z)
-            activations.append(activation)
+            a = self.activation_func(z)
+            activations.append(a)
 
         # backward pass
         delta = self.cost_derivative(activations[-1], y) * \
-            sigmoid_derivative(zs[-1])
+            self.activation_fun_derivative(zs[-1])
         db[-1] = delta
         dw[-1] = np.dot(delta, activations[-2].transpose())
 
         for l in range(2, self.num_layers):
             z = zs[-l]
-            sp = sigmoid_derivative(z)
+            sp = self.activation_fun_derivative(z)
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
             db[-l] = delta
             dw[-l] = np.dot(delta, activations[-l-1].transpose())
