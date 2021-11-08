@@ -1,5 +1,5 @@
 import numpy as np
-from sigmoid import sigmoid_derivative
+from neuron import sigmoid_neuron
 
 
 class cross_entropy_cost:
@@ -13,7 +13,7 @@ class cross_entropy_cost:
         return np.sum(np.nan_to_num(-y * np.log(activation_out) - (1-y)*np.log(1-activation_out)))
 
     @staticmethod
-    def delta(z_out, activation_out, y):
+    def delta(z_out, activation_out, y, f_prime):
         """
         Computes the delta for the last layer , i.e for last activation layer 
 
@@ -22,7 +22,7 @@ class cross_entropy_cost:
         return (activation_out - y)
 
 
-class quadratic_loss:
+class quadratic_cost:
     @staticmethod
     def cost(activation_out, y):
         """
@@ -30,9 +30,9 @@ class quadratic_loss:
         """
         return 0.5 * (np.linalg.norm(activation_out-y)**2)
 
-    def delta(z_out, activation_out, y):
+    def delta(z_out, activation_out, y, f_prime):
         """
         Computes the delta for the last layer w.r.t to the quadratic loss function
 
         """
-        return (activation_out-y)*sigmoid_derivative(z_out)
+        return (activation_out-y) * f_prime(z_out)
