@@ -4,11 +4,12 @@ from itertools import *
 import numpy as np
 
 import matplotlib.pyplot as plt
+from numpy.core.defchararray import split
 from numpy.core.fromnumeric import size
 import pandas as pd
 import seaborn as sns
 
-from utils.neuralNet import NeuralNet
+from neuralNet import NeuralNet
 
 
 class ParamGrid:
@@ -40,6 +41,56 @@ class ParamGrid:
                     yield parameter
 
 
+def cv_neural_net(data):
+
+    pass
+
+
+def kfolddCV_neural_net(data: np.ndarray, labels: np.ndarray, sizes, lmbda, eta, cost_func, neuron_type, epochs, batch_size, cv=5):
+
+  # Split the data into cv number of folds
+    indexes = np.arange(0, data.shape[0])
+    np.random.shuffle(indexes)
+    splits = np.array_split(indexes, cv)
+
+    net_train_accuracy, net_test_accuracy, net_train_cost, net_test_cost = 0.0, 0.0, 0.0, 0.0
+    for i in range(cv):
+
+        # data
+        train_indexes = np.hstack(np.delete(splits, i, axis=0))
+
+        # Now modify the train_labels to vectorize them
+        train_x = [np.reshape(x, (-1, 1)) for x in data[train_indexes]]
+        train_y = [vectorized_result(y) for y in labels[train_indexes]]
+
+        test_x = [np.reshape(x, (-1, 1)) for x in data[splits[i]]]
+        test_y = labels[splits[i]]
+
+        train_data = list(zip(train_x, train_y))
+        test_data = list(zip(test_x, test_y))
+
+        model = NeuralNet(size=sizes, neuron_type=neuron_type, cost=cost_func)
+        train_accuracy, train_cost, test_accuracy, test_cost = model.fit(train_data=train_data, epochs=epochs,
+                                                                         mini_batch_size=batch_size, eta=eta, verbose=False, lmda=lmbda, test_data=test_data)
+
+        # We take the best values of train_accuracy ,test_accuracy etc which are given for each epoch
+        # Only store the best values
+
+        train_accuracy = np.max(train_accuracy)
+        test_accuracy = np.max(test_accuracy)
+        train_cost = np.min(train_cost)
+        test_cost = np.min(test_cost)
+
+        net_train_accuracy += (train_accuracy/cv)
+        net_test_accuracy += (test_accuracy/cv)
+        net_train_cost += (train_cost/cv)
+        net_test_cost += (test_cost/cv)
+
+    return net_train_accuracy, net_train_cost, net_test_accuracy, net_test_cost
+
+    pass
+
+
 class gridSearchCV:
     """
     - Tune the hyperparameter of neural net model by passing range of hyperparamter values
@@ -67,16 +118,15 @@ class gridSearchCV:
         self.paramGrid = ParamGrid(paramGrid)
         self.cv = cv
 
-    def fit(self, X, Y):
-
-        # Split the data into cv number of folds
-        indexes = np.arange(0, X.shape[0])
-        np.random.shuffle(indexes)
-        splits = np.array_split(indexes, self.cv)
+    def fit(self, X, Y, verbose=True):
 
         cv_results: List[Dict[str, ]] = []
+
+        # Caluclate scores for each configuration in the params we have
         for param in self.paramGrid.iterate():
 
+            if(verbose):
+                print("Configuration :", param)
             # Param is a dictionary of hyperparameters
             neuron_type = 'sigmoid' if(not param.__contains__(
                 'neuron_type')) else param['neuron_type']
@@ -93,28 +143,24 @@ class gridSearchCV:
             batch_size = 10 if(not param.__contains__(
                 'batch_size')) else param['batch_size']
 
-            # Computing the CV scores
-            test_score, train_score = 0.0, 0.0
+            train_accuracy, train_cost, test_accuracy, test_cost = kfolddCV_neural_net(
+                X, Y, sizes=sizes, lmbda=lmbda,
+                eta=eta, cost_func=cost,
+                neuron_type=neuron_type,
+                epochs=epoch, batch_size=batch_size,
+                cv=5)
 
-            for i in range(0, self.cv):
-                model = NeuralNet(
-                    size=sizes, neuron_type=neuron_type, cost=cost)
+            param['train_accuracy'] = train_accuracy
+            param['train_cost'] = train_cost
+            param['test_accuracy'] = test_accuracy
+            param['test_cost'] = test_cost
 
-                X_train, Y_train = X[np.hstack(np.delete(splits, i, axis=0))], Y[np.hstack(
-                    np.delete(splits, i, axis=0))]
-                X_test, Y_test = X[np.ravel(
-                    splits[i])], Y[np.ravel(splits[i])]
-                pass
-            model = NeuralNet(size=sizes, neuron_type=neuron_type, cost=cost)
-            test_score, train_score = model.kfold_cross_validation(
-                self.X, self.Y, cv=self.cv)
-
-            param['test_score'] = test_score
-            param['train_score'] = train_score
-
+            if verbose:
+                print('Scores : ', param)
             cv_results.append(param)
+
         cv_results = sorted(
-            cv_results, key=lambda x: x['test_score'], reverse=True)
+            cv_results, key=lambda x: x['test_accuracy'], reverse=True)
         self.cv_results = cv_results
 
     def best_param(self):
@@ -172,3 +218,10 @@ class gridSearchCV:
             ax.set_xlabel('Degree of kernel'), ax.invert_yaxis()
             ax.set_ylabel('C (Regularization strength)')
             plt.show()
+
+
+def vectorized_result(j):
+
+    e = np.zeros((10, 1))
+    e[j] = 1.0
+    return e

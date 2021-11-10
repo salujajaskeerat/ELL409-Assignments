@@ -1,8 +1,9 @@
 from typing import List
 import numpy as np
 from typing import List, Literal
-from neuron import sigmoid_neuron, relu_neuron
+from neuron import sigmoid_neuron, relu_neuron, tanh_neuron, soft_plus
 from cost_funcs import quadratic_cost, cross_entropy_cost
+
 
 # import logging
 # logger = logging.getLogger('Debug Logger')
@@ -14,6 +15,8 @@ from cost_funcs import quadratic_cost, cross_entropy_cost
 # # add the handlers to logger
 # logger.addHandler(ch)
 
+
+# NOTE : Last layer must always be a sigmoid layer
 
 def perceptron(z):
     z[z > 0] = 1.0
@@ -52,10 +55,15 @@ class NeuralNet(object):
 
         self.neuron_type = neuron_type
         self.activation_func = {"sigmoid": sigmoid_neuron.f,
-                                "relu": relu_neuron.f
+                                "relu": relu_neuron.f,
+                                "tanh": tanh_neuron.f,
+                                "soft_plus": soft_plus.f,
+
                                 }[neuron_type]
         self.activation_fun_derivative = {"sigmoid": sigmoid_neuron.f_prime,
-                                          "relu": relu_neuron.f_prime
+                                          "relu": relu_neuron.f_prime,
+                                          "tanh": tanh_neuron.f_prime,
+                                          "soft_plus": soft_plus.f_prime
                                           }[neuron_type]
 
         self.cost = {"quadratic_cost": quadratic_cost,
@@ -66,6 +74,13 @@ class NeuralNet(object):
         print(f"Neuron Type = {self.neuron_type}")
         print(f"Number of hidden layers = {self.num_hidden_layers}")
 
+    def ith_layer_out(self, a: np.ndarray, k):
+        a = a.reshape((-1, 1))
+        for w, b in zip(self.weights[:-1*k], self.biases[:-1*k]):
+            a = self.activation_func(np.dot(w, a) + b)
+
+        return a
+
     def feedforward(self, a: np.ndarray):
         """
         # About
@@ -73,11 +88,14 @@ class NeuralNet(object):
         a is assumed to be (n,1) vector
         """
         a = a.reshape((-1, 1))
-        for w, b in zip(self.weights, self.biases):
+        for w, b in zip(self.weights[:-1], self.biases[:-1]):
             a = self.activation_func(np.dot(w, a) + b)
+
+        # Last layer is sigmoid
+        a = sigmoid_neuron.f(np.dot(self.weights[-1], a)+self.biases[-1])
         return a
 
-    def fit(self, train_data: np.ndarray, epochs: int, mini_batch_size, eta, test_data=None, lmda=0):
+    def fit(self, train_data: np.ndarray, epochs: int, mini_batch_size, eta, test_data=None, lmda=0, decay_rate=2, decay_after_epoch=5, verbose=True):
         """
         ## train_data
 
@@ -93,8 +111,13 @@ class NeuralNet(object):
         n = len(train_data)
         train_accuracy, train_cost, test_accuracy, test_cost = [], [], [], []
 
-        print("Scores -->")
+        # print("Scores -->")
         for j in range(epochs):
+
+            # Decay scehdule
+            if(j % decay_after_epoch == 0):
+                eta = eta/decay_rate
+
             np.random.shuffle(train_data)
             mini_batches = [train_data[i:i+mini_batch_size]
                             for i in range(0, n, mini_batch_size)]
@@ -107,9 +130,9 @@ class NeuralNet(object):
             if(test_data):
                 test_accuracy.append(self.accuracy(test_data))
                 test_cost.append(self.net_cost(test_data, lmda, True))
-
-            print(
-                f'Epoch :{j+1} complete: test_accuracy: {test_accuracy[-1]} , train_accuracy :{train_accuracy[-1]}',  flush=True)
+            if verbose:
+                print(
+                    f'Epoch :{j+1} complete: test_accuracy: {test_accuracy[-1]} , train_accuracy :{train_accuracy[-1]}',  flush=True)
         return (train_accuracy, train_cost, test_accuracy, test_cost)
 
     def fit_mini_batch(self, mini_batch, eta: float, lmda: float):
@@ -142,15 +165,21 @@ class NeuralNet(object):
         zs = []
 
         # Forwards propagations
-        for b, w in zip(self.biases, self.weights):
+        for b, w in zip(self.biases[:-1], self.weights[:-1]):
             z = np.dot(w, a)+b
             zs.append(z)
             a = self.activation_func(z)
             activations.append(a)
 
+        # Last layer is always sigmoid
+        z = np.dot(self.weights[-1], a)+self.biases[-1]
+        zs.append(z)
+        a = sigmoid_neuron.f(z)
+        activations.append(a)
+
         # backward pass
         delta = (self.cost).delta(
-            zs[-1], activations[-1], y, self.activation_fun_derivative)
+            zs[-1], activations[-1], y, sigmoid_neuron.f_prime)  # last layer is sigmoid so
         db[-1] = delta
         dw[-1] = np.dot(delta, activations[-2].transpose())
 
@@ -176,6 +205,11 @@ class NeuralNet(object):
             sum(np.linalg.norm(w)**2 for w in self.weights)
 
         return cost
+
+    def predict(self, test_data: np.ndarray):
+
+        scores = [(np.argmax(self.feedforward(x)))for x, y in test_data]
+        return scores
 
     def accuracy(self, data, convert_format=False):
         """ Return the number of test inputs for which the neural
