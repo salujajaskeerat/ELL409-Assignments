@@ -32,7 +32,18 @@
 % Theory and implementation of neural net class
 \section{Theory and python implemetation}
 \begin{frame}[t]{Theory and python implemetation }
-    
+    \scriptsize
+    \begin{itemize}
+        \item The neural nets class have been implemented in neuralNet.py . 
+        \item The class has flexibility for neuron type , cost-function , eta ,regularization ,batch-size.
+        \item Several activation function are also available and are imolemented in neuron.py
+        \item To perform cross validation GridSearchCv class has also been implemeted in utils/search.py
+        \item For activation function : 'sigmoid' and 'tanh' are used .
+        \item To specify the structure of neural net , list represtation is used to initilize the network.
+        \item For example [n1,n2,n3..nk] implies k layers with n1 as input and nk as output layer , hence total
+                of k-2 hidden layers. 
+
+    \end{itemize}
 \end{frame}
 
 
@@ -528,15 +539,254 @@
 \subsection{Part-1B Comparison with the PCA features}
 
 \begin{frame}
-    \frametitle{PCA }
+    \frametitle{PCA and Neural networks}
+    \textbf{Dimensionality reduction in neural networks}
+    \begin{itemize}
+        \item When number of hidden units $< $number of input units . The net performs dimensionality 
+                reduction of input image to low dimension representation.
+        \item Each synthesized dimension (each hidden unit) is logistic
+        function of inputs $h_k(x) = \frac{1}{ 1+ \exp (w_0+\sum_{i=1}^{N}{w_i x_i}) }$ .
+        \item Hence an N-input input layer when input to M unit hidden input layer , we get 
+            non-linear transformation of the N-dimesnion to M-dimension data.
+    
+
+    \end{itemize}
+    \textbf{PCA}
+    \begin{itemize}
+        \item Given data points in d-dimensional space, project into lower
+        dimensional space while preserving as much information as
+        possible (linear transformation)
+    \end{itemize}
+    
+
+\end{frame}
+
+% PCA and Neural net continued
+\begin{frame}{Training on PCA data}
+    \scriptsize
+    \textbf{No hidden layer (Logistic regression)}
+    \begin{itemize}
+        \item Neural net 25 -- 10
+        \item The PCA data contained 25 feature representation of the image data given to us
+            in previous assignment .
+        \item Training neural net with no hidden layer directly on this gives us model with best 
+            testing accuracy of 85 percentage.
+    \end{itemize}
+
+    \textbf{1 hidden layer (17 hidden units)}
+    \begin{itemize}
+        \item Neural net 25 -- 17 -- 10
+        \item Best accuracy (testing )achieved is 89.05 percent , with 91 percent training accuracy.
+        \item Adding one hidden layer help improve the accuracy of the model significantly , because
+                neural net performs non-linear tranformation of this PCA data and learns best out of it. 
+    \end{itemize}
+
+    \textbf{2 hidden layer (20 and 15 hidden units)}
+    \begin{itemize}
+        \item Neural net 25 -- 20 -- 15 -- 10
+        \item Best accuracy (testing )achieved is 90.1 percent , with 92 percent training accuracy.
+        \item Adding another  hidden layer help improve the accuracy of the model slightly.
+    \end{itemize}
 
     
 
 \end{frame}
-% Advanced Neural networks
-\section{Part-2 Advanced Neural networks}
+
 \begin{frame}
     \frametitle{}
+
+    \begin{block}{Comparison with raw pixel data}
+        \begin{itemize}
+            \item Neural net trained on 784 pixel data  (94 percent accuracy) performed way better than the neural
+                    net trained on PCA features (90 percent accuracy). 
+            \item Though PCA does not throw away every other pixel and it only
+                 transforms the data to have important features. Keeping maximum variance in the dataset.
+            \item Reducing Dimensions in an image where pixels are the features, 
+                would mean downsampling the image
+        \end{itemize}
+    \end{block}
+    
+
+\end{frame}
+
+% Advanced Neural networks
+\section{Part-2 Advanced Neural networks}
+
+\subsection{Using Convolutional Network}
+\begin{frame}
+    \frametitle{Using Convolutional networks}
+
+    \scriptsize
+
+    \begin{itemize}
+        \item Convolution solves  three important ideas that  improves a machinelearning model:
+        \begin{itemize}
+            \scriptsize
+            \item sparse interactions : In ANN every output unit interacts with every input unit . Convolution network
+                    uses sparse connections by taking kernel smaller than the input.
+            \item parameter sharing 
+            \item equivariant representations
+        \end{itemize}
+    \end{itemize}
+
+    \begin{columns}
+        \begin{column}[T]{0.5\linewidth}
+            % \includegraphics[width=100pt,height=120pt]{convolution_network/layers_in_convolution_net.png}
+        \end{column}
+        \begin{column}[T]{0.5\linewidth}
+            \includegraphics[width=\linewidth,height=120pt]{convolution_network/kernel_operation.png}
+        \end{column}
+
+ 
+    \end{columns}
+    
+
+\end{frame}
+
+% Stages in covolutional network
+\begin{frame}
+    \frametitle{Stages in Convolutional network}
+    \scriptsize
+    \textbf{A typical layer of a convolutional network consists of three stages:}
+
+    \begin{columns}
+        \begin{column}[T]{0.8\linewidth}
+            \begin{itemize}
+                \item In the ﬁrst stage, the layer performs several convolutions in parallel to 
+                produce aset of linear activations.
+                \item In the second stage, each linear activation is run through a nonlinear activation function,
+                 such as the reLU.
+                 \item In the third stage, we use apooling function to modify the output of the layer further
+                 \item A pooling function replaces the output of the net at a certain location with asummary statistic of the nearby outputs
+                 \item For example : MAX Pooling ,operation reports the maximum output within a rectangularneighborhood.
+                 \item Now this 2D data is Flattened and fed into our old ANN networks.
+                 \item The first 3 steps performs the feature extraction , thus we then train the neural net on this.
+        
+            \end{itemize}
+        \end{column}
+        \begin{column}[T]{0.3\linewidth}
+            \begin{column}[T]{0.5\linewidth}
+                \includegraphics[width=100pt,height=120pt]{convolution_network/layers_in_convolution_net.png}
+            \end{column}
+        \end{column}
+    \end{columns}
+    \begin{block}{Regularization}
+        For regularization we can use Dropout after the pooling layer.
+    \end{block}
+\end{frame}
+
+% CNN on the MNISt data set
+\begin{frame}
+    \frametitle{CNN on MNIST DATA}
+    \scriptsize
+    \begin{itemize}
+        \item We used 1 layer of convolution followed by pooling . Then we use Dropout for
+        regularization purposes .
+        \item After 3 of above layers , we then perform our old ANN on the activation function.
+        \item The code below nicely explains our neural net structure.
+    \end{itemize}
+
+    \begin{columns}
+        \begin{column}[T]{0.5\linewidth}
+            \begin{block}{Results}
+                \begin{itemize}
+                    \item Training acccuracy =99.36 percent
+                    \item Testing accuracy = 99.22 percent
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}[T]{0.5\linewidth}
+            \includegraphics[width=\linewidth,height=100pt]{convolution_network/layers_mnist.png}
+        \end{column}
+    \end{columns}
+
+    
+
+\end{frame}
+
+
+% Visualization of CNN hidden layers
+\begin{frame}
+    \frametitle{Visualization of hidden layer neurons}
+
+    \includegraphics[width=\linewidth,height=60pt]{convolution_network/layer_visualization.png}
+    \includegraphics[width=\linewidth,height=65pt]{convolution_network/layer_visualization_pooling.png}
+    \includegraphics[width=\linewidth,height=65pt]{convolution_network/layer_visualization_dropout.png}
+    
+
+\end{frame}
+
+\begin{frame}
+    \large Observations
+  
+    \begin{itemize}
+        \item This first layer retains almost the full shape of the image, and also most 
+             of the information present in the image
+        \item As we go deeper into the network we can see that the activations become more complex and abstract.
+             It starts encoding high-level features such as edges, curves and angles.
+    \end{itemize}
+\end{frame}
+
+
+\subsection{Using AutoEncoder Networks}
+\begin{frame}
+    \frametitle{Using AutoEncoders}
+    \scriptsize
+    \begin{columns}
+        \begin{column}[T]{0.8\linewidth}
+            \begin{itemize}
+                \item Auto-encoders are neural nets used for feature extraction . It is unsupervised 
+                    algorithms , i.e does not used labels.
+                \item  The Key idea is to transform image into low dimesnion called encoder network ,the
+                        reconstructing the image back from the decoder network . The model is trained so 
+                        that it does this task with least loss.
+                \item  Hence we get non-linear trandformation of image to lower dimensions.
+            \end{itemize}
+            \includegraphics[width=200pt,height=100pt]{auto_encoders/diag.png}
+            
+        \end{column}
+
+        \begin{column}[T]{0.2\linewidth}
+            \includegraphics[width=\linewidth,height=50pt]{auto_encoders/original_6_digit.png}    
+            \includegraphics[width=\linewidth,height=50pt]{auto_encoders/decoded_from_15__6_digit.png}
+            \includegraphics[width=\linewidth,height=50pt]{auto_encoders/decoded_from_100__6_digit.png}    
+        \end{column}
+
+    \end{columns}
+
+    
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Final Conclusions}
+    \begin{block}{Observation}
+        \scriptsize
+        I have a very simple autoencoder neural net i.e just 3 layers with 784,15,784 . Then performed Training on it.
+        \begin{itemize}
+            \item  Still with so simple autoencoder network we are able to reconstruct the digit images . 
+            \item  Now after training we encode the training images and get the encoded outputs
+            \item Train another ANN for the encoded-outputs vs labels (Supervised)
+            \item Got 96 percent validation accuracy with so simple network.
+
+        \end{itemize}
+
+
+    \end{block}
+    \textbf{Further Imrovements}
+    \begin{itemize}
+        \item We can use CNN to train the auto-encoder network. This would improve the model drastically.
+        \item There have been reports with deep CNN auto-encoder network with 15 encoding dimesion , giving 
+            more than 98 percent accuracy.
+    \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+
+    \large \centering Thanking you 
 
     
 
